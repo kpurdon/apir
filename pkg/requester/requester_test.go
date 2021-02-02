@@ -86,6 +86,9 @@ func TestClientMustAddAPI(t *testing.T) {
 	assert.Panics(t, func() {
 		client.MustAddAPI("test", discoverer.NewDirect(ts.URL))
 	}, "cannot add the same api twice")
+	assert.Panics(t, func() {
+		client.MustAddAPI("test-bad-url", discoverer.NewDirect(""))
+	}, "discoverer must return a valid url")
 }
 
 func TestClientNewRequest(t *testing.T) {

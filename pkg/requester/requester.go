@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -109,7 +111,12 @@ func NewClient(name string, options ...ClientOption) *Client {
 // MustAddAPI adds an API with the given name and Discover to the Client applying any given APIOption methods.
 func (c *Client) MustAddAPI(name string, discoverer Discoverer, options ...APIOption) {
 	if _, ok := c.apis[name]; ok {
-		panic(fmt.Sprintf("api %q already initialized", name))
+		log.Panicf("api %q already initialized", name)
+	}
+
+	_, err := url.Parse(discoverer.URL())
+	if err != nil {
+		log.Panicf("discoverer does not return a valid url: %+v", err)
 	}
 
 	api := &API{Discoverer: discoverer}
