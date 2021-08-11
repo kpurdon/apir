@@ -79,19 +79,18 @@ func TestNewClient(t *testing.T) {
 	assert.NotNil(t, requester.NewClient("test"))
 }
 
-func TestClientMustAddAPI(t *testing.T) {
+func TestClientAddAPI(t *testing.T) {
 	client := requester.NewClient("test")
 	require.NotNil(t, client)
 	client.MustAddAPI("test", discoverer.NewDirect(ts.URL))
-	assert.Panics(t, func() {
-		client.MustAddAPI("test", discoverer.NewDirect(ts.URL))
-	}, "cannot add the same api twice")
+	assert.Error(t, client.AddAPI("test", discoverer.NewDirect(ts.URL)), "cannot add the same api twice")
+	assert.Errror(t,client.AddAPI("test-bad-url", discoverer.NewDirect("")), "discoverer must return a valid url")
 }
 
 func TestClientNewRequest(t *testing.T) {
 	client := requester.NewClient("test")
 	require.NotNil(t, client)
-	client.MustAddAPI("test", discoverer.NewDirect(ts.URL))
+	require.NoError(t, client.AddAPI("test", discoverer.NewDirect(ts.URL)))
 
 	req, err := client.NewRequest(context.TODO(), "not-test", http.MethodGet, "", nil)
 	assert.Nil(t, req)
@@ -104,8 +103,8 @@ func TestClientNewRequest(t *testing.T) {
 
 func TestClientExecute_CSV(t *testing.T) {
 	client := requester.NewClient("test")
-	client.MustAddAPI("file-csv", discoverer.NewDirect(ts.URL),
-		requester.WithContentType(requester.TextCSV))
+	require.NoError(t, client.AddAPI("file-csv", discoverer.NewDirect(ts.URL),
+		requester.WithContentType(requester.TextCSV)))
 
 	req, err := client.NewRequest(context.TODO(), "file-csv", http.MethodGet, "/?test=file-csv", nil)
 	require.NoError(t, err)
@@ -131,7 +130,7 @@ func TestClientExecute_CSV(t *testing.T) {
 
 func TestClientExecute_JSON(t *testing.T) {
 	client := requester.NewClient("test")
-	client.MustAddAPI("json", discoverer.NewDirect(ts.URL))
+	require.NoError(t, client.AddAPI("json", discoverer.NewDirect(ts.URL)))
 
 	req, err := client.NewRequest(context.TODO(), "json", http.MethodGet, "/?test=json", nil)
 	require.NoError(t, err)
@@ -148,7 +147,7 @@ func TestClientExecute_JSON(t *testing.T) {
 
 func TestClientExecute_JSONError(t *testing.T) {
 	client := requester.NewClient("test")
-	client.MustAddAPI("json-error", discoverer.NewDirect(ts.URL))
+	require.NoError(t, client.AddAPI("json-error", discoverer.NewDirect(ts.URL)))
 
 	req, err := client.NewRequest(context.TODO(), "json-error", http.MethodGet, "/?test=json-error", nil)
 	require.NoError(t, err)
@@ -165,7 +164,7 @@ func TestClientExecute_JSONError(t *testing.T) {
 
 func TestClientExecute_NoErrorData(t *testing.T) {
 	client := requester.NewClient("test")
-	client.MustAddAPI("json-error", discoverer.NewDirect(ts.URL))
+	require.NoError(t, client.AddAPI("json-error", discoverer.NewDirect(ts.URL)))
 
 	req, err := client.NewRequest(context.TODO(), "json-error", http.MethodGet, "/?test=json-error", nil)
 	require.NoError(t, err)
@@ -182,8 +181,8 @@ func TestClientExecute_NoErrorData(t *testing.T) {
 
 func TestClientExecute_Retry(t *testing.T) {
 	client := requester.NewClient(t.Name(), requester.WithRetry())
-	client.MustAddAPI("retry", discoverer.NewDirect(ts.URL),
-		requester.WithContentType(requester.ApplicationJSON))
+	require.NoError(t, client.AddAPI("retry", discoverer.NewDirect(ts.URL),
+		requester.WithContentType(requester.ApplicationJSON)))
 
 	req, err := client.NewRequest(context.TODO(), "retry", http.MethodGet,
 		fmt.Sprintf("/%s?test=retry", t.Name()), nil)
@@ -203,8 +202,8 @@ func TestClientExecute_Retry(t *testing.T) {
 
 func TestClientExecute_Timeout(t *testing.T) {
 	client := requester.NewClient("test", requester.WithTimeout(100*time.Millisecond))
-	client.MustAddAPI("timeout", discoverer.NewDirect(ts.URL),
-		requester.WithContentType(requester.ApplicationJSON))
+	require.NoError(t,client.AddAPI("timeout", discoverer.NewDirect(ts.URL),
+		requester.WithContentType(requester.ApplicationJSON)))
 
 	req, err := client.NewRequest(context.TODO(), "timeout", http.MethodGet,
 		fmt.Sprintf("/%s?test=timeout", t.Name()), nil)
