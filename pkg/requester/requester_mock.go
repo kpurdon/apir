@@ -23,7 +23,7 @@ type MockClient struct { //nolint:maligned
 // AddAPI implements the Requester.MustAddAPI method.
 func (m *MockClient) AddAPI(apiName string, discoverer Discoverer, options ...APIOption) error {
 	m.AddAPIFnCalled = true
-	m.AddAPIFn(apiName, discoverer, options...)
+	return m.AddAPIFn(apiName, discoverer, options...)
 }
 
 // NewRequest implements the Requester.NewRequest method.

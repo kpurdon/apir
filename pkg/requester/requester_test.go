@@ -22,7 +22,7 @@ var (
 	ts       *httptest.Server
 )
 
-func testHandler(w http.ResponseWriter, r *http.Request) {
+func testHandler(w http.ResponseWriter, r *http.Request) { //nolint:cyclop
 	switch r.URL.Query().Get("test") {
 	case "file-csv":
 		http.ServeFile(w, r, path.Join("files", "test.csv"))
@@ -72,22 +72,26 @@ func TestMain(m *testing.M) {
 }
 
 func TestContentTypeString(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "application/json", requester.ApplicationJSON.String())
 }
 
 func TestNewClient(t *testing.T) {
+	t.Parallel()
 	assert.NotNil(t, requester.NewClient("test"))
 }
 
 func TestClientAddAPI(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test")
 	require.NotNil(t, client)
-	client.MustAddAPI("test", discoverer.NewDirect(ts.URL))
+	assert.NoError(t, client.AddAPI("test", discoverer.NewDirect(ts.URL)))
 	assert.Error(t, client.AddAPI("test", discoverer.NewDirect(ts.URL)), "cannot add the same api twice")
-	assert.Errror(t,client.AddAPI("test-bad-url", discoverer.NewDirect("")), "discoverer must return a valid url")
+	assert.Error(t, client.AddAPI("test-bad-url", discoverer.NewDirect("http://user:}{@foo.com")), "discoverer must return a valid url")
 }
 
 func TestClientNewRequest(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test")
 	require.NotNil(t, client)
 	require.NoError(t, client.AddAPI("test", discoverer.NewDirect(ts.URL)))
@@ -102,6 +106,7 @@ func TestClientNewRequest(t *testing.T) {
 }
 
 func TestClientExecute_CSV(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test")
 	require.NoError(t, client.AddAPI("file-csv", discoverer.NewDirect(ts.URL),
 		requester.WithContentType(requester.TextCSV)))
@@ -111,6 +116,7 @@ func TestClientExecute_CSV(t *testing.T) {
 	assert.NotNil(t, req)
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		var data bytes.Buffer
 		ok, err := client.Execute(req, &data, nil)
 		require.NoError(t, err)
@@ -119,6 +125,7 @@ func TestClientExecute_CSV(t *testing.T) {
 	})
 
 	t.Run("not a buffer", func(t *testing.T) {
+		t.Parallel()
 		var data struct {
 			Foo string `json:"foo"`
 		}
@@ -129,6 +136,7 @@ func TestClientExecute_CSV(t *testing.T) {
 }
 
 func TestClientExecute_JSON(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test")
 	require.NoError(t, client.AddAPI("json", discoverer.NewDirect(ts.URL)))
 
@@ -146,6 +154,7 @@ func TestClientExecute_JSON(t *testing.T) {
 }
 
 func TestClientExecute_JSONError(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test")
 	require.NoError(t, client.AddAPI("json-error", discoverer.NewDirect(ts.URL)))
 
@@ -163,6 +172,7 @@ func TestClientExecute_JSONError(t *testing.T) {
 }
 
 func TestClientExecute_NoErrorData(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test")
 	require.NoError(t, client.AddAPI("json-error", discoverer.NewDirect(ts.URL)))
 
@@ -180,6 +190,7 @@ func TestClientExecute_NoErrorData(t *testing.T) {
 }
 
 func TestClientExecute_Retry(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient(t.Name(), requester.WithRetry())
 	require.NoError(t, client.AddAPI("retry", discoverer.NewDirect(ts.URL),
 		requester.WithContentType(requester.ApplicationJSON)))
@@ -201,8 +212,9 @@ func TestClientExecute_Retry(t *testing.T) {
 }
 
 func TestClientExecute_Timeout(t *testing.T) {
+	t.Parallel()
 	client := requester.NewClient("test", requester.WithTimeout(100*time.Millisecond))
-	require.NoError(t,client.AddAPI("timeout", discoverer.NewDirect(ts.URL),
+	require.NoError(t, client.AddAPI("timeout", discoverer.NewDirect(ts.URL),
 		requester.WithContentType(requester.ApplicationJSON)))
 
 	req, err := client.NewRequest(context.TODO(), "timeout", http.MethodGet,

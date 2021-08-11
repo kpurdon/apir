@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -109,12 +110,12 @@ func NewClient(name string, options ...ClientOption) *Client {
 // AddAPI adds an API with the given name and Discover to the Client applying any given APIOption methods.
 func (c *Client) AddAPI(name string, discoverer Discoverer, options ...APIOption) error {
 	if _, ok := c.apis[name]; ok {
-		return errors.Errorf("api %q already initialized", name)
+		return fmt.Errorf("api %q already initialized", name)
 	}
 
 	_, err := url.Parse(discoverer.URL())
 	if err != nil {
-		return errors.Errorf("discoverer does not return a valid url: %+v", err)
+		return fmt.Errorf("discoverer does not return a valid url: %w", err)
 	}
 
 	api := &API{Discoverer: discoverer}
@@ -184,12 +185,7 @@ func (c *Client) Execute(req *Request, successData, errorData interface{}) (bool
 	if err != nil {
 		return false, fmt.Errorf("error making request: %w", err)
 	}
-	defer func() {
-		err = resp.Body.Close()
-		if err != nil {
-			fmt.Printf("error closing response body: %+v", err)
-		}
-	}()
+	defer resp.Body.Close() // nolint:errcheck
 
 	var ok bool
 	switch req.api.contentType {
